@@ -66,7 +66,18 @@ struct ResponseView: View {
             Divider()
             switch section {
             case .body:
-                ResponseBodyView(loaded: loaded)
+                if let content = loaded.content {
+                    ResponseBodyView(response: response, content: content)
+                } else {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .task(id: loaded.receivedAt) {
+                            let content = await AppModel.interpret(response)
+                            // The view may have been removed (tab switched away) while formatting ran.
+                            guard !Task.isCancelled else { return }
+                            state.restoreDisplayContent(content, receivedAt: loaded.receivedAt)
+                        }
+                }
             case .headers:
                 HeadersTable(headers: response.headers)
             case .cookies:

@@ -18,12 +18,12 @@ private enum BodyDisplayMode: String, CaseIterable, Identifiable {
 }
 
 struct ResponseBodyView: View {
-    let loaded: LoadedResponse
+    let response: HTTPResponse
+    let content: ResponseContent
     @State private var mode: BodyDisplayMode = Self.initialMode
     @AppStorage(AppSettings.wrapLinesKey) private var wrapLines = true
     @AppStorage(AppSettings.editorFontSizeKey) private var fontSize = 12.0
 
-    private var content: ResponseContent { loaded.content }
 
     private static var initialMode: BodyDisplayMode {
         #if DEBUG
@@ -85,7 +85,7 @@ struct ResponseBodyView: View {
                     ContentUnavailableView {
                         Label("二进制内容", systemImage: "doc.zipper")
                     } description: {
-                        Text("\(Formatters.bytes(loaded.response.bodySize))，无法以文本显示。")
+                        Text("\(Formatters.bytes(response.bodySize))，无法以文本显示。")
                     } actions: {
                         Button("保存到文件…") { saveBody() }
                     }
@@ -112,7 +112,7 @@ struct ResponseBodyView: View {
             CodeTextView(text: .constant(content.text ?? ""), isEditable: false, wrapsLines: wrapLines, fontSize: fontSize)
         case .preview:
             if content.kind == .html {
-                HTMLPreview(html: content.text ?? "", baseURL: loaded.response.url)
+                HTMLPreview(html: content.text ?? "", baseURL: response.url)
             } else {
                 CodeTextView(text: .constant(content.text ?? ""), isEditable: false, wrapsLines: true, fontSize: fontSize)
             }
@@ -121,7 +121,7 @@ struct ResponseBodyView: View {
 
     @ViewBuilder
     private var imagePreview: some View {
-        if let image = NSImage(data: loaded.response.body) {
+        if let image = NSImage(data: response.body) {
             ScrollView([.horizontal, .vertical]) {
                 Image(nsImage: image)
                     .resizable()
@@ -149,7 +149,7 @@ struct ResponseBodyView: View {
         NSPasteboard.general.clearContents()
         if let text = mode == .raw ? content.text : (content.prettyText ?? content.text) {
             NSPasteboard.general.setString(text, forType: .string)
-        } else if let image = NSImage(data: loaded.response.body) {
+        } else if let image = NSImage(data: response.body) {
             NSPasteboard.general.writeObjects([image])
         }
     }
@@ -159,13 +159,13 @@ struct ResponseBodyView: View {
         panel.canCreateDirectories = true
         panel.nameFieldStringValue = suggestedFilename
         guard panel.runModal() == .OK, let url = panel.url else { return }
-        try? loaded.response.body.write(to: url, options: .atomic)
+        try? response.body.write(to: url, options: .atomic)
     }
 
     private var suggestedFilename: String {
-        let last = loaded.response.url?.lastPathComponent ?? ""
+        let last = response.url?.lastPathComponent ?? ""
         if !last.isEmpty, last != "/", last.contains(".") { return last }
-        let ext = loaded.response.mimeType.flatMap { UTType(mimeType: $0)?.preferredFilenameExtension } ?? "txt"
+        let ext = response.mimeType.flatMap { UTType(mimeType: $0)?.preferredFilenameExtension } ?? "txt"
         return "response.\(ext)"
     }
 }

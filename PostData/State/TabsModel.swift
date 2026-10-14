@@ -22,7 +22,14 @@ struct EditorTab: Identifiable {
 @Observable
 final class TabsModel {
     private(set) var tabs: [EditorTab] = []
-    var selectedTabID: UUID?
+    var selectedTabID: UUID? {
+        didSet {
+            // Background tabs keep only raw response bytes; the text is rebuilt when they're shown again.
+            if oldValue != selectedTabID, let oldValue {
+                tab(id: oldValue)?.requestState?.releaseDisplayContent()
+            }
+        }
+    }
 
     var selectedTab: EditorTab? { tabs.first { $0.id == selectedTabID } }
     var selectedRequest: RequestTabState? { selectedTab?.requestState }

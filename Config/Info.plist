@@ -11,6 +11,16 @@
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 	</dict>
+	<!--
+	Return freed large blocks (response bodies, formatted text) to the system immediately instead of
+	caching them, so memory drops back after closing tabs or replacing big responses. Applied by
+	LaunchServices when the app is launched from Finder, the Dock or `open`.
+	-->
+	<key>LSEnvironment</key>
+	<dict>
+		<key>MallocLargeCache</key>
+		<string>0</string>
+	</dict>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>PostData needs local network access to send requests to servers on your network.</string>
 </dict>

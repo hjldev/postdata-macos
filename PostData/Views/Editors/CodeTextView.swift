@@ -52,12 +52,26 @@ struct CodeTextView: NSViewRepresentable {
         context.coordinator.configure(textView, in: scrollView, initial: false)
     }
 
+    /// AppKit can keep a removed text view (and its find-bar machinery) alive for a while after
+    /// SwiftUI drops it; empty the storage now so the text, highlighting and layout are freed immediately.
+    static func dismantleNSView(_ scrollView: NSScrollView, coordinator: Coordinator) {
+        coordinator.cancelPendingHighlight()
+        guard let textView = scrollView.documentView as? NSTextView else { return }
+        textView.delegate = nil
+        textView.textStorage?.setAttributedString(NSAttributedString())
+        textView.undoManager?.removeAllActions(withTarget: textView)
+    }
+
     @MainActor
     final class Coordinator: NSObject, NSTextViewDelegate {
+
         var parent: CodeTextView
         private var appliedFontSize: CGFloat = 0
         private var appliedWrap: Bool?
         private var appliedLanguage: CodeLanguage?
+        /// The text last pushed to or read from the view. Comparing against this is O(1) when SwiftUI
+        /// passes the same string again, whereas reading `textView.string` copies the whole document.
+        private var appliedText: String?
         private var highlightTask: Task<Void, Never>?
 
         init(_ parent: CodeTextView) {
@@ -65,6 +79,11 @@ struct CodeTextView: NSViewRepresentable {
         }
 
         var font: NSFont { .monospacedSystemFont(ofSize: parent.fontSize, weight: .regular) }
+
+        func cancelPendingHighlight() {
+            highlightTask?.cancel()
+            highlightTask = nil
+        }
 
         func configure(_ textView: NSTextView, in scrollView: NSScrollView, initial: Bool) {
             textView.isEditable = parent.isEditable
@@ -86,7 +105,8 @@ struct CodeTextView: NSViewRepresentable {
                 appliedLanguage = parent.language
                 needsHighlight = true
             }
-            if textView.string != parent.text {
+            if appliedText != parent.text {
+                appliedText = parent.text
                 let selection = textView.selectedRanges
                 textView.string = parent.text
                 let length = (parent.text as NSString).length
@@ -120,7 +140,9 @@ struct CodeTextView: NSViewRepresentable {
 
         func textDidChange(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }
-            parent.text = textView.string
+            let text = textView.string
+            appliedText = text
+            parent.text = text
             // Re-highlight right away for small documents, debounced for large ones.
             if textView.string.utf16.count < 100_000 {
                 highlight(textView)

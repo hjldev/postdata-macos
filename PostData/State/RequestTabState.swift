@@ -20,7 +20,9 @@ enum RequestSection: String, CaseIterable, Identifiable {
 
 struct LoadedResponse {
     let response: HTTPResponse
-    let content: ResponseContent
+    /// Decoded / pretty-printed body for display. Dropped while the tab is in the background
+    /// (only the raw bytes are kept) and rebuilt when the tab is shown again.
+    var content: ResponseContent?
     let receivedAt: Date
 }
 
@@ -58,6 +60,24 @@ final class RequestTabState: Identifiable {
     }
 
     var isDirty: Bool { draft != baseline }
+
+    /// Responses at least this large drop their display text while the tab is in the background.
+    static let backgroundReleaseThreshold = 64 * 1024
+
+    /// Called when the tab goes to the background: keep the raw body, free the formatted copies.
+    func releaseDisplayContent() {
+        guard case .loaded(var loaded) = response, loaded.content != nil,
+              loaded.response.bodySize >= Self.backgroundReleaseThreshold else { return }
+        loaded.content = nil
+        response = .loaded(loaded)
+    }
+
+    /// Restores display content computed for the response received at `receivedAt`.
+    func restoreDisplayContent(_ content: ResponseContent, receivedAt: Date) {
+        guard case .loaded(var loaded) = response, loaded.receivedAt == receivedAt, loaded.content == nil else { return }
+        loaded.content = content
+        response = .loaded(loaded)
+    }
 
     func cancel() {
         sendTask?.cancel()

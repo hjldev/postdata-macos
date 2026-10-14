@@ -44,8 +44,11 @@ public final class HTTPClient: Sendable {
 
         let clock = ContinuousClock()
         let start = clock.now
-        let (data, response) = try await session.data(for: request, delegate: tracker)
+        let (received, response) = try await session.data(for: request, delegate: tracker)
         let elapsed = start.duration(to: clock.now)
+        // URLSession grows its buffer while downloading, so large bodies can hold ~2x their size;
+        // keep an exact-size copy since responses stay in memory while their tab is open.
+        let data = received.count >= 64 * 1024 ? received.withUnsafeBytes { Data($0) } : received
         let duration = Double(elapsed.components.seconds) + Double(elapsed.components.attoseconds) / 1e18
 
         guard let http = response as? HTTPURLResponse else { throw HTTPClientError.notHTTPResponse }

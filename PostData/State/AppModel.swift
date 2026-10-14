@@ -483,11 +483,23 @@ final class AppModel {
             guard let self else { return }
             if autoSend { sendSelected() }
             try? await Task.sleep(for: .seconds(autoSend ? 2.5 : 0.5))
+            // `-PostDataDebugReselect YES`: switch to the next tab and back (background content release/restore).
+            if defaults.bool(forKey: "PostDataDebugReselect"), let current = tabs.selectedTabID {
+                tabs.selectNext()
+                try? await Task.sleep(for: .seconds(1))
+                tabs.selectedTabID = current
+            }
             switch sheet {
             case "code": if let state = tabs.selectedRequest { activeSheet = .codeSnippet(state) }
             case "save": if let state = tabs.selectedRequest { activeSheet = .saveRequest(state) }
             case "import": activeSheet = .importData
             default: break
+            }
+        }
+        if let url = defaults.string(forKey: "PostDataDebugMemory") {
+            Task { @MainActor [weak self] in
+                try? await Task.sleep(for: .seconds(2))
+                await self?.runMemoryScript(url: url)
             }
         }
         // `-PostDataDebugQuitAfter <seconds>` quits through the normal termination path.
