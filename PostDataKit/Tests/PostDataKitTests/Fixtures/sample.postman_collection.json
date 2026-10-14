@@ -1,0 +1,154 @@
+{
+  "info": {
+    "_postman_id": "5f0c6f2a-1111-4c3b-9b1e-0a1b2c3d4e5f",
+    "name": "Sample API",
+    "description": "A fixture covering the mapped parts of the v2.1 schema.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      { "key": "token", "value": "{{token}}", "type": "string" }
+    ]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "https://api.example.com", "type": "string" },
+    { "key": "unused", "value": "x", "disabled": true }
+  ],
+  "event": [
+    { "listen": "prerequest", "script": { "type": "text/javascript", "exec": ["console.log('hi')"] } }
+  ],
+  "item": [
+    {
+      "name": "Users",
+      "description": { "content": "User endpoints", "type": "text/markdown" },
+      "item": [
+        {
+          "name": "List users",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "X-Debug", "value": "1", "disabled": true }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users?page=1&limit=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["users"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "sort", "value": "name", "disabled": true }
+              ]
+            }
+          },
+          "response": [
+            { "name": "OK", "status": "OK", "code": 200, "body": "[]" }
+          ]
+        },
+        {
+          "name": "Create user",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Ada\",\n  \"age\": 36\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/users"
+          },
+          "event": [
+            { "listen": "test", "script": { "exec": ["pm.test('ok', () => {})"] } }
+          ]
+        },
+        {
+          "name": "Get user",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/users/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["users", ":id"],
+              "variable": [{ "key": "id", "value": "42" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Login (form)",
+      "request": {
+        "auth": { "type": "noauth" },
+        "method": "POST",
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            { "key": "username", "value": "ada" },
+            { "key": "password", "value": "secret", "disabled": true }
+          ]
+        },
+        "url": "{{baseUrl}}/login"
+      }
+    },
+    {
+      "name": "Upload avatar",
+      "request": {
+        "auth": {
+          "type": "apikey",
+          "apikey": [
+            { "key": "key", "value": "X-API-Key" },
+            { "key": "value", "value": "abc123" },
+            { "key": "in", "value": "header" }
+          ]
+        },
+        "method": "PUT",
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            { "key": "caption", "value": "me", "type": "text" },
+            { "key": "file", "type": "file", "src": "/tmp/avatar.png" }
+          ]
+        },
+        "url": "{{baseUrl}}/avatar"
+      }
+    },
+    {
+      "name": "Basic",
+      "request": {
+        "auth": {
+          "type": "basic",
+          "basic": [
+            { "key": "username", "value": "ada" },
+            { "key": "password", "value": "pw" }
+          ]
+        },
+        "method": "GET",
+        "url": "https://httpbin.org/basic-auth/ada/pw"
+      }
+    },
+    {
+      "name": "OAuth thing",
+      "request": {
+        "auth": { "type": "oauth2", "oauth2": [] },
+        "method": "GET",
+        "url": "https://example.com"
+      }
+    },
+    {
+      "name": "GraphQL",
+      "request": {
+        "method": "POST",
+        "body": {
+          "mode": "graphql",
+          "graphql": { "query": "{ viewer { login } }", "variables": "" }
+        },
+        "url": "https://api.github.com/graphql"
+      }
+    },
+    {
+      "name": "Shorthand",
+      "request": "https://example.com/plain"
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+	Only NSAllowsArbitraryLoads: when NSAllowsLocalNetworking (or the other NSAllowsArbitraryLoads*
+	keys) is also present, macOS ignores NSAllowsArbitraryLoads and blocks plain http:// to the internet.
+	-->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>PostData needs local network access to send requests to servers on your network.</string>
+</dict>
+</plist>
